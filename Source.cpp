@@ -1,27 +1,76 @@
-#define _CRT_SECURE_NO_WARNINGS
-#include<stdio.h>
-#define MAX 1024
+##define _CRT_SECURE_NO_WARNINGS
 
-int BrojRedova(const char*);
+#include #include
+#define MAX_SIZE 50
+#define MAX_LINE 1024
+#define MAX_POINTS 15
+#define EXIT_SUCCESS 0
+#define FILE_ERROR_OPEN -1
+#define MALLOC_ERROR -2
+#define SCANF_ERROR -3
 
-int main() {
-	int brojredova = 0;
-	brojredova = BrojRedova("filename.txt");
-	return 0;
+typedef struct _student {
+	char name[MAX_SIZE];
+	char surname[MAX_SIZE];
+	double points;
+} Student;
+
+int readNoRowsInFile()
+{
+	int counter = 0;
+	char buffer[MAX_LINE] = { 0 };
+
+	FILE* filePointer = NULL;
+	filePointer = fopen("students.txt", "r");
+	if (!filePointer) {
+		printf("File not opened!\n");
+		return FILE_ERROR_OPEN;
+	}
+
+	while (!feof(filePointer)) {
+		fgets(buffer, MAX_LINE, filePointer);
+		counter++;
+	}
+
+	fclose(filePointer);
+
+	return counter;
 }
 
-int BrojRedova(const char*) {
-	FILE* fp = NULL;
-	int brojredova = 0;
-	char buffer[MAX] = {};
-	fp = fopen(filename, "r");
-	if (!fp) {
-		return -1;
+int main()
+{
+	int i = 0, noRows = 0;
+	noRows = readNoRowsInFile();
+
+	if (noRows > 0)
+	{
+		FILE* filePointer = NULL;
+		filePointer = fopen("students.txt", "r");
+		if (!filePointer) {
+			printf("File not opened!\n");
+			return FILE_ERROR_OPEN;
+		}
+
+		Student* stud = NULL;
+		stud = (Student*)malloc(noRows * sizeof(Student));
+		if (stud == NULL) {
+			printf("Malloc error!\n");
+			return MALLOC_ERROR;
+		}
+
+		for (i = 0; i < noRows; i++) {
+			if (fscanf(filePointer, " %s %s %lf ", stud[i].name, stud[i].surname, &stud[i].points) != 3)
+				return SCANF_ERROR;
+		}
+
+		for (i = 0; i < noRows; i++) {
+			printf("%s %s %.2lf %.2lf\%\n", stud[i].name, stud[i].surname, stud[i].points, stud[i].points / MAX_POINTS * 100);
+		}
+
+		fclose(filePointer);
+		free(stud);
 	}
-	while (!feof(fp)) {
-		fgets(buffer, MAX, fp);
-		brojredova++;
-	}
-	fclose(fp);
-	return brojredova;
+
+	return EXIT_SUCCESS;
 }
+
