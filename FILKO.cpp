@@ -1,74 +1,122 @@
-#define _CRT_SECURE_NO_WARNINGS
-#include<stdio.h>
-#define MAX_SIZE 50
-#define MAX_LINE 1024
-#define MAX_POINTS 15
-#define EXIT_SUCCESS 0
-#define FILE_ERROR_OPEN -1
-#define MALLOC_ERROR -2
-#define SCANF_ERROR -3
+﻿#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-typedef struct _student {
-	char name[MAX_SIZE];
-	char surname[MAX_SIZE];
-	double points;
-} Student;
+typedef struct Osoba {
+    char ime[30];
+    char prezime[30];
+    int godina_rodenja;
+    struct Osoba* next;
+} Osoba;
 
-int readNoRowsInFile()
-{
-	int counter = 0;
-	char buffer[MAX_LINE] = { 0 };
-
-	FILE* filePointer = NULL;
-	filePointer = fopen("students.txt", "r");
-	if (!filePointer) {
-		printf("File not opened!\n");
-		return FILE_ERROR_OPEN;
-	}
-
-	while (!feof(filePointer)) {
-		fgets(buffer, MAX_LINE, filePointer);
-		counter++;
-	}
-
-	fclose(filePointer);
-
-	return counter;
+Osoba* kreirajOsobu(const char* ime, const char* prezime, int godina_rodenja) {
+    Osoba* novaOsoba = (Osoba*)malloc(sizeof(Osoba));
+    if (novaOsoba == NULL) {
+        printf("Greška pri alokaciji memorije!\n");
+        exit(EXIT_FAILURE);
+    }
+    strncpy(novaOsoba->ime, ime, sizeof(novaOsoba->ime));
+    strncpy(novaOsoba->prezime, prezime, sizeof(novaOsoba->prezime));
+    novaOsoba->godina_rodenja = godina_rodenja;
+    novaOsoba->next = NULL;
+    return novaOsoba;
 }
 
-int main()
-{
-	int i = 0, noRows = 0;
-	noRows = readNoRowsInFile();
+Osoba* dodajNaPocetak(Osoba* lista, const char* ime, const char* prezime, int godina_rodenja) {
+    Osoba* novaOsoba = kreirajOsobu(ime, prezime, godina_rodenja);
+    novaOsoba->next = lista;
+    return novaOsoba;
+}
 
-	if (noRows > 0)
-	{
-		FILE* filePointer = NULL;
-		filePointer = fopen("students.txt", "r");
-		if (!filePointer) {
-			printf("File not opened!\n");
-			return FILE_ERROR_OPEN;
-		}
+void ispisiListu(Osoba* lista) {
+    Osoba* trenutna = lista;
+    while (trenutna != NULL) {
+        printf("Ime: %s, Prezime: %s, Godina rođenja: %d\n", trenutna->ime, trenutna->prezime, trenutna->godina_rodenja);
+        trenutna = trenutna->next;
+    }
+}
 
-		Student* stud = NULL;
-		stud = (Student*)malloc(noRows * sizeof(Student));
-		if (stud == NULL) {
-			printf("Malloc error!\n");
-			return MALLOC_ERROR;
-		}
+Osoba* dodajNaKraj(Osoba* lista, const char* ime, const char* prezime, int godina_rodenja) {
+    Osoba* novaOsoba = kreirajOsobu(ime, prezime, godina_rodenja);
+    if (lista == NULL) {
+        return novaOsoba;
+    }
 
-		for (i = 0; i < noRows; i++) {
-			if (fscanf(filePointer, " %s %s %lf ", stud[i].name, stud[i].surname, &stud[i].points) != 3)
-				return SCANF_ERROR;
-		}
+    Osoba* trenutna = lista;
+    while (trenutna->next != NULL) {
+        trenutna = trenutna->next;
+    }
+    trenutna->next = novaOsoba;
+    return lista;
+}
 
-		for (i = 0; i < noRows; i++) {
-			printf("%s %s %.2lf %.2lf\%\n", stud[i].name, stud[i].surname, stud[i].points, stud[i].points / MAX_POINTS * 100);
-		}
+Osoba* pronadjiPoPrezimenu(Osoba* lista, const char* prezime) {
+    Osoba* trenutna = lista;
+    while (trenutna != NULL) {
+        if (strcmp(trenutna->prezime, prezime) == 0) {
+            return trenutna;
+        }
+        trenutna = trenutna->next;
+    }
+    return NULL;
+}
 
-		fclose(filePointer);
-		free(stud);
-	}
+Osoba* obrisiElement(Osoba* lista, const char* prezime) {
+    Osoba* trenutna = lista;
+    Osoba* prethodna = NULL;
 
-	return EXIT_SUCCESS;
+    while (trenutna != NULL) {
+        if (strcmp(trenutna->prezime, prezime) == 0) {
+            if (prethodna == NULL) {
+                Osoba* noviPocetak = trenutna->next;
+                free(trenutna);
+                return noviPocetak;
+            }
+            else {
+                prethodna->next = trenutna->next;
+                free(trenutna);
+                return lista;
+            }
+        }
+        prethodna = trenutna;
+        trenutna = trenutna->next;
+    }
+    return lista;
+}
+
+void oslobodiListu(Osoba* lista) {
+    Osoba* trenutna = lista;
+    while (trenutna != NULL) {
+        Osoba* sledeca = trenutna->next;
+        free(trenutna);
+        trenutna = sledeca;
+    }
+}
+
+int main() {
+    Osoba* lista = NULL;
+
+    lista = dodajNaPocetak(lista, "Marko", "Markovic", 2000);
+    lista = dodajNaKraj(lista, "Jana", "Jankovic", 1998);
+    lista = dodajNaKraj(lista, "Ana", "Anic", 2001);
+
+    printf("Lista osoba:\n");
+    ispisiListu(lista);
+
+    const char* prezimeZaPretragu = "Jankovic";
+    Osoba* pronadjen = pronadjiPoPrezimenu(lista, prezimeZaPretragu);
+    if (pronadjen) {
+        printf("Pronađena osoba: %s %s, Godina rođenja: %d\n", pronadjen->ime, pronadjen->prezime, pronadjen->godina_rodenja);
+    }
+    else {
+        printf("Osoba sa prezimenom '%s' nije pronađena.\n", prezimeZaPretragu);
+    }
+
+    lista = obrisiElement(lista, "Markovic");
+    printf("Lista nakon brisanja:\n");
+    ispisiListu(lista);
+
+    oslobodiListu(lista);
+
+    return 0;
 }
