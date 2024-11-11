@@ -1,122 +1,318 @@
-﻿#include <stdio.h>
+﻿#define _CRT_SECURE_NO_WARNINGS
+
+
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct Osoba {
-    char ime[30];
-    char prezime[30];
-    int godina_rodenja;
-    struct Osoba* next;
-} Osoba;
+struct _Element;
+typedef struct _Element* Position;
+typedef struct _Element {
+	int coefficient;
+	int exponent;
+	Position next;
+} Element;
 
-Osoba* kreirajOsobu(const char* ime, const char* prezime, int godina_rodenja) {
-    Osoba* novaOsoba = (Osoba*)malloc(sizeof(Osoba));
-    if (novaOsoba == NULL) {
-        printf("Greška pri alokaciji memorije!\n");
-        exit(EXIT_FAILURE);
-    }
-    strncpy(novaOsoba->ime, ime, sizeof(novaOsoba->ime));
-    strncpy(novaOsoba->prezime, prezime, sizeof(novaOsoba->prezime));
-    novaOsoba->godina_rodenja = godina_rodenja;
-    novaOsoba->next = NULL;
-    return novaOsoba;
-}
-
-Osoba* dodajNaPocetak(Osoba* lista, const char* ime, const char* prezime, int godina_rodenja) {
-    Osoba* novaOsoba = kreirajOsobu(ime, prezime, godina_rodenja);
-    novaOsoba->next = lista;
-    return novaOsoba;
-}
-
-void ispisiListu(Osoba* lista) {
-    Osoba* trenutna = lista;
-    while (trenutna != NULL) {
-        printf("Ime: %s, Prezime: %s, Godina rođenja: %d\n", trenutna->ime, trenutna->prezime, trenutna->godina_rodenja);
-        trenutna = trenutna->next;
-    }
-}
-
-Osoba* dodajNaKraj(Osoba* lista, const char* ime, const char* prezime, int godina_rodenja) {
-    Osoba* novaOsoba = kreirajOsobu(ime, prezime, godina_rodenja);
-    if (lista == NULL) {
-        return novaOsoba;
-    }
-
-    Osoba* trenutna = lista;
-    while (trenutna->next != NULL) {
-        trenutna = trenutna->next;
-    }
-    trenutna->next = novaOsoba;
-    return lista;
-}
-
-Osoba* pronadjiPoPrezimenu(Osoba* lista, const char* prezime) {
-    Osoba* trenutna = lista;
-    while (trenutna != NULL) {
-        if (strcmp(trenutna->prezime, prezime) == 0) {
-            return trenutna;
-        }
-        trenutna = trenutna->next;
-    }
-    return NULL;
-}
-
-Osoba* obrisiElement(Osoba* lista, const char* prezime) {
-    Osoba* trenutna = lista;
-    Osoba* prethodna = NULL;
-
-    while (trenutna != NULL) {
-        if (strcmp(trenutna->prezime, prezime) == 0) {
-            if (prethodna == NULL) {
-                Osoba* noviPocetak = trenutna->next;
-                free(trenutna);
-                return noviPocetak;
-            }
-            else {
-                prethodna->next = trenutna->next;
-                free(trenutna);
-                return lista;
-            }
-        }
-        prethodna = trenutna;
-        trenutna = trenutna->next;
-    }
-    return lista;
-}
-
-void oslobodiListu(Osoba* lista) {
-    Osoba* trenutna = lista;
-    while (trenutna != NULL) {
-        Osoba* sledeca = trenutna->next;
-        free(trenutna);
-        trenutna = sledeca;
-    }
-}
+int readFile(Position headPoly1, Position headPoly2, char* fileName);
+int printPoly(char* polynomeName, Position first);
+int addPoly(Position resultHead, Position firstElementPoly1, Position firstElementPoly2);
+int multiplyPoly(Position resultHead, Position firstElementPoly1, Position firstElementPoly2);
+int freeMemory(Position head);
+int parseStringIntoList(Position head, char* buffer);
+Position createElement(coefficient, exponent);
+int insertSorted(Position head, Position newElement);
+int mergeAfter(Position current, Position newElement);
+int insertAfter(Position current, Position newElement);
+int deleteAfter(Position current);
 
 int main() {
-    Osoba* lista = NULL;
 
-    lista = dodajNaPocetak(lista, "Marko", "Markovic", 2000);
-    lista = dodajNaKraj(lista, "Jana", "Jankovic", 1998);
-    lista = dodajNaKraj(lista, "Ana", "Anic", 2001);
+	Element headPoly1 = { .coefficient = 0, .exponent = 0, .next = NULL };
+	Element headPoly2 = { .coefficient = 0, .exponent = 0, .next = NULL };
+	Element headPolyAdd = { .coefficient = 0, .exponent = 0, .next = NULL };
+	Element headPolyMultiply = { .coefficient = 0, .exponent = 0, .next = NULL };
+	char* fileName = "polynomes.txt";
 
-    printf("Lista osoba:\n");
-    ispisiListu(lista);
+	if (readFile(&headPoly1, &headPoly2, fileName) == EXIT_SUCCESS) {
 
-    const char* prezimeZaPretragu = "Jankovic";
-    Osoba* pronadjen = pronadjiPoPrezimenu(lista, prezimeZaPretragu);
-    if (pronadjen) {
-        printf("Pronađena osoba: %s %s, Godina rođenja: %d\n", pronadjen->ime, pronadjen->prezime, pronadjen->godina_rodenja);
-    }
-    else {
-        printf("Osoba sa prezimenom '%s' nije pronađena.\n", prezimeZaPretragu);
-    }
+		printPoly("First polynome: ", headPoly1.next);
+		printPoly("Second polynome: ", headPoly2.next);
 
-    lista = obrisiElement(lista, "Markovic");
-    printf("Lista nakon brisanja:\n");
-    ispisiListu(lista);
+		addPoly(&headPolyAdd, headPoly1.next, headPoly2.next);
+		multiplyPoly(&headPolyMultiply, headPoly1.next, headPoly2.next);
 
-    oslobodiListu(lista);
+		printPoly("Added polynome: ", headPolyAdd.next);
+		printPoly("Multiplied polynome: ", headPolyMultiply.next);
 
-    return 0;
+		freeMemory(&headPoly1);
+		freeMemory(&headPoly2);
+		freeMemory(&headPolyAdd);
+		freeMemory(&headPolyMultiply);
+
+	}
+
+	return EXIT_SUCCESS;
+}
+
+
+int readFile(Position headPoly1, Position headPoly2, char* fileName) {
+	FILE* filePointer = NULL;
+	char buffer[MAX_LINE] = { 0 };
+	int status = EXIT_SUCCESS;
+
+	filePointer = fopen(fileName, "r");
+
+	if (!filePointer) {
+		printf("Can't open the file!\n");
+		return FILE_NOT_OPEN;
+	}
+
+	fgets(buffer, MAX_SIZE, filePointer);
+	status = parseStringIntoList(headPoly1, buffer);
+	if (status != EXIT_SUCCESS) {
+		return EXIT_FAILURE;
+	}
+
+	fgets(buffer, MAX_SIZE, filePointer);
+	status = parseStringIntoList(headPoly2, buffer);
+	if (status != EXIT_SUCCESS) {
+		return EXIT_FAILURE;
+	}
+
+	fclose(filePointer);
+
+	return EXIT_SUCCESS;
+}
+
+int printPoly(char* polynomeName, Position first) {
+	printf(" %s", polynomeName);
+	if (first != NULL) {
+		if (first->exponent < 0) {
+			if (first->coefficient == 1) {
+				printf("x^(%d)", first->exponent);
+			}
+			else {
+				printf("%dx^(%d)", first->coefficient, first->exponent);
+			}
+		}
+		else {
+			if (first->coefficient == 1) {
+				printf("x^%d", first->exponent);
+			}
+			else {
+				printf("%dx^%d", first->coefficient, first->exponent);
+			}
+		}
+
+		first = first->next;
+	}
+
+	for (; first != NULL; first = first->next) {
+		if (first->coefficient < 0) {
+			if (first->exponent < 0) {
+				printf(" - %dx^(%d)", first->coefficient, first->exponent);
+			}
+			else printf(" - %dx^%d", first->coefficient, first->exponent);
+		}
+		else {
+			if (first->exponent < 0) {
+				if (first->coefficient == 1) {
+					printf(" + x^(%d)", first->exponent);
+				}
+				else {
+					printf(" + %dx^(%d)", first->coefficient, first->exponent);
+				}
+			}
+			else {
+				if (first->coefficient == 1) {
+					printf(" + x^%d", first->exponent);
+				}
+				else {
+					printf(" + %dx^%d", first->coefficient, first->exponent);
+				}
+			}
+		}
+	}
+
+	printf("\n");
+	return EXIT_SUCCESS;
+}
+
+int addPoly(Position resultHead, Position firstElementPoly1, Position firstElementPoly2) {
+	Position currentPoly1 = firstElementPoly1;
+	Position currentPoly2 = firstElementPoly2;
+	Position currentResult = resultHead;
+	Position remainingPoly = NULL;
+
+	while (currentPoly1 != NULL && currentPoly2 != NULL) {
+		if (currentPoly1->exponent == currentPoly2->exponent) {
+			createAndInsertAfter(currentPoly1->coefficient + currentPoly2->coefficient, currentPoly1->exponent, currentResult);
+			currentPoly1 = currentPoly1->next;
+			currentPoly2 = currentPoly2->next;
+			currentResult = currentResult->next;
+		}
+		else if (currentPoly1->exponent < currentPoly2->exponent) {
+			createAndInsertAfter(currentPoly1->coefficient, currentPoly1->exponent, currentResult);
+			currentPoly1 = currentPoly1->next;
+			currentResult = currentResult->next;
+		}
+		else if (currentPoly1->exponent > currentPoly2->exponent) {
+			createAndInsertAfter(currentPoly2->coefficient, currentPoly2->exponent, currentResult);
+			currentPoly2 = currentPoly2->next;
+			currentResult = currentResult->next;
+		}
+	}
+
+	if (currentPoly2 == NULL) {
+		remainingPoly = currentPoly1;
+	}
+	else {
+		remainingPoly = currentPoly2;
+	}
+
+	while (remainingPoly != NULL) {
+		createAndInsertAfter(remainingPoly->coefficient, remainingPoly->exponent, currentResult);
+		remainingPoly = remainingPoly->next;
+		currentResult->next;
+	}
+
+	return EXIT_SUCCESS;
+}
+
+int multiplyPoly(Position resultHead, Position firstElementPoly1, Position firstElementPoly2) {
+
+	if (firstElementPoly1 != NULL || firstElementPoly2 != NULL) {
+		for (Position currentPoly1 = firstElementPoly1; currentPoly1 != NULL; currentPoly1 = currentPoly1->next) {
+			for (Position currentPoly2 = firstElementPoly2; currentPoly2 != NULL; currentPoly2 = currentPoly2->next) {
+				Position newElement = createElement(currentPoly1->coefficient * currentPoly2->coefficient, currentPoly1->exponent * currentPoly2->exponent);
+
+				if (newElement == NULL) {
+					return EXIT_FAILURE;
+				}
+
+				insertSorted(resultHead, newElement);
+			}
+		}
+		return EXIT_SUCCESS;
+	}
+	return EMPTY_LISTS;
+}
+
+int freeMemory(Position head) {
+
+	Position current = head;
+
+	while (current->next != NULL) {
+		deleteAfter(current);
+	}
+
+	return EXIT_SUCCESS;
+}
+
+int parseStringIntoList(Position head, char* buffer) {
+	char* currentBuffer = buffer;
+	int coefficient = 0;
+	int exponent = 0;
+	int numBytes = 0;
+	int status = 0;
+	Position newElement = NULL;
+
+	while (strlen(currentBuffer) > 0) {
+		status = sscanf(currentBuffer, " %dx^%d %n", &coefficient, &exponent, &numBytes);
+
+		if (status != 2) {
+			printf("File not good.\n");
+			return EXIT_FAILURE;
+		}
+
+		newElement = createElement(coefficient, exponent);
+		if (newElement == NULL) {
+			return EXIT_FAILURE;
+		}
+
+		insertSorted(head, newElement);
+
+		currentBuffer += numBytes;
+	}
+
+	return EXIT_SUCCESS;
+}
+
+Position createElement(coefficient, exponent) {
+	Position element = NULL;
+
+	element = (Position)malloc(sizeof(Element));
+	if (element == NULL) {
+		printf("Can't allocate memory!");
+		return FAILED_MEMORY_ALLOCATION;
+	}
+
+	element->coefficient = coefficient;
+	element->exponent = exponent;
+	element->next = NULL;
+
+	return element;
+}
+
+int insertSorted(Position head, Position newElement) {
+	Position current = head;
+
+	while (current->next != NULL && current->next->exponent > current->exponent) {
+		current = current->next;
+	}
+
+	mergeAfter(current, newElement);
+
+	return EXIT_SUCCESS;
+}
+
+int mergeAfter(Position current, Position newElement) {
+
+	if (current->next == NULL || current->next->exponent != newElement->exponent) {
+		insertAfter(current, newElement);
+	}
+	else {
+		int resultCoefficient = current->next->coefficient + newElement->coefficient;
+
+		if (resultCoefficient == 0) {
+			deleteAfter(current);
+		}
+		else {
+			current->next->coefficient = resultCoefficient;
+		}
+		free(newElement);
+	}
+
+	return EXIT_SUCCESS;
+}
+
+int insertAfter(Position current, Position newElement) {
+
+	newElement->next = current->next;
+	current->next = newElement;
+
+	return EXIT_SUCCESS;
+}
+
+int deleteAfter(Position current) {
+
+	Position toDelete = NULL;
+
+	toDelete = current->next;
+	current->next = toDelete->next;
+	free(toDelete);
+
+	return EXIT_SUCCESS;
+}
+
+int createAndInsertAfter(int coefficient, int exponent, Position current) {
+	Position newElement = createElement(coefficient, exponent);
+
+	if (newElement == NULL) {
+		return EXIT_FAILURE;
+	}
+
+	insertAfter(current, newElement);
+
+	return EXIT_SUCCESS;
 }
