@@ -1,168 +1,207 @@
 ﻿#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <stdbool.h>
 
-// Struktura za artikl
-typedef struct Artikl {
-    char naziv[50];
-    int kolicina;
-    float cijena;
-    struct Artikl* sljedeci;
-} Artikl;
+// Struktura za čvor stabla
+typedef struct Node {
+    int data;
+    struct Node* left;
+    struct Node* right;
+} Node;
 
-// Struktura za račun
-typedef struct Racun {
-    char datum[11]; // Format YYYY-MM-DD
-    Artikl* artikli;
-    struct Racun* sljedeci;
-} Racun;
-
-// Funkcija za kreiranje novog artikla
-Artikl* noviArtikl(char* naziv, int kolicina, float cijena) {
-    Artikl* artikl = (Artikl*)malloc(sizeof(Artikl));
-    strcpy(artikl->naziv, naziv);
-    artikl->kolicina = kolicina;
-    artikl->cijena = cijena;
-    artikl->sljedeci = NULL;
-    return artikl;
+// Funkcija za stvaranje novog čvora
+Node* noviCvor(int data) {
+    Node* cvor = (Node*)malloc(sizeof(Node));
+    cvor->data = data;
+    cvor->left = NULL;
+    cvor->right = NULL;
+    return cvor;
 }
 
-// Funkcija za dodavanje artikla u sortiranu listu
-Artikl* dodajArtiklSortirano(Artikl* glava, Artikl* novi) {
-    if (!glava || strcmp(novi->naziv, glava->naziv) < 0) {
-        novi->sljedeci = glava;
-        return novi;
+// Dodavanje novog elementa u stablo
+Node* dodaj(Node* root, int data) {
+    if (root == NULL) {
+        return noviCvor(data);
     }
-    Artikl* trenutni = glava;
-    while (trenutni->sljedeci && strcmp(novi->naziv, trenutni->sljedeci->naziv) > 0) {
-        trenutni = trenutni->sljedeci;
+    if (data < root->data) {
+        root->left = dodaj(root->left, data);
     }
-    novi->sljedeci = trenutni->sljedeci;
-    trenutni->sljedeci = novi;
-    return glava;
+    else if (data > root->data) {
+        root->right = dodaj(root->right, data);
+    }
+    return root;
 }
 
-// Funkcija za spajanje duplikata artikala
-Artikl* spojiDuplikate(Artikl* glava) {
-    Artikl* trenutni = glava;
-    while (trenutni && trenutni->sljedeci) {
-        if (strcmp(trenutni->naziv, trenutni->sljedeci->naziv) == 0) {
-            Artikl* duplikat = trenutni->sljedeci;
-            trenutni->kolicina += duplikat->kolicina;
-            trenutni->cijena += duplikat->cijena;
-            trenutni->sljedeci = duplikat->sljedeci;
-            free(duplikat);
+// Ispis inorder (lijevo, korijen, desno)
+void inorder(Node* root) {
+    if (root != NULL) {
+        inorder(root->left);
+        printf("%d ", root->data);
+        inorder(root->right);
+    }
+}
+
+// Ispis preorder (korijen, lijevo, desno)
+void preorder(Node* root) {
+    if (root != NULL) {
+        printf("%d ", root->data);
+        preorder(root->left);
+        preorder(root->right);
+    }
+}
+
+// Ispis postorder (lijevo, desno, korijen)
+void postorder(Node* root) {
+    if (root != NULL) {
+        postorder(root->left);
+        postorder(root->right);
+        printf("%d ", root->data);
+    }
+}
+
+// Ispis level-order (po razinama)
+void levelOrder(Node* root) {
+    if (root == NULL) return;
+
+    Node* queue[100];
+    int front = 0, rear = 0;
+
+    queue[rear++] = root;
+
+    while (front < rear) {
+        Node* current = queue[front++];
+        printf("%d ", current->data);
+
+        if (current->left != NULL) {
+            queue[rear++] = current->left;
         }
-        else {
-            trenutni = trenutni->sljedeci;
+        if (current->right != NULL) {
+            queue[rear++] = current->right;
         }
     }
-    return glava;
 }
 
-// Funkcija za kreiranje novog računa
-Racun* noviRacun(char* datum) {
-    Racun* racun = (Racun*)malloc(sizeof(Racun));
-    strcpy(racun->datum, datum);
-    racun->artikli = NULL;
-    racun->sljedeci = NULL;
-    return racun;
-}
-
-// Funkcija za dodavanje računa u sortiranu listu
-Racun* dodajRacunSortirano(Racun* glava, Racun* novi) {
-    if (!glava || strcmp(novi->datum, glava->datum) < 0) {
-        novi->sljedeci = glava;
-        return novi;
+// Pronalaženje elementa u stablu
+bool pronadi(Node* root, int data) {
+    if (root == NULL) {
+        return false;
     }
-    Racun* trenutni = glava;
-    while (trenutni->sljedeci && strcmp(novi->datum, trenutni->sljedeci->datum) > 0) {
-        trenutni = trenutni->sljedeci;
+    if (data == root->data) {
+        return true;
     }
-    novi->sljedeci = trenutni->sljedeci;
-    trenutni->sljedeci = novi;
-    return glava;
+    if (data < root->data) {
+        return pronadi(root->left, data);
+    }
+    else {
+        return pronadi(root->right, data);
+    }
 }
 
-// Funkcija za učitavanje računa iz datoteke
-Racun* ucitajRacune(const char* nazivDatoteke) {
-    FILE* file = fopen(nazivDatoteke, "r");
-    if (!file) {
-        printf("Greska pri otvaranju datoteke %s!\n", nazivDatoteke);
+// Najmanji element u stablu (za pomoć pri brisanju)
+Node* najmanjiCvor(Node* root) {
+    while (root->left != NULL) {
+        root = root->left;
+    }
+    return root;
+}
+
+// Brisanje elementa iz stabla
+Node* obrisi(Node* root, int data) {
+    if (root == NULL) {
         return NULL;
     }
-
-    Racun* racuni = NULL;
-    char nazivRacuna[50];
-    while (fscanf(file, "%s", nazivRacuna) == 1) {
-        FILE* racunFile = fopen(nazivRacuna, "r");
-        if (!racunFile) {
-            printf("Greska pri otvaranju datoteke %s!\n", nazivRacuna);
-            continue;
-        }
-
-        char datum[11];
-        fscanf(racunFile, "%10s", datum);
-
-        Racun* novi = noviRacun(datum);
-        char nazivArtikla[50];
-        int kolicina;
-        float cijena;
-        while (fscanf(racunFile, "%[^,],%d,%f\n", nazivArtikla, &kolicina, &cijena) == 3) {
-            Artikl* artikl = noviArtikl(nazivArtikla, kolicina, cijena);
-            novi->artikli = dodajArtiklSortirano(novi->artikli, artikl);
-        }
-
-        fclose(racunFile);
-
-        // Spajanje duplikata artikala
-        novi->artikli = spojiDuplikate(novi->artikli);
-        racuni = dodajRacunSortirano(racuni, novi);
+    if (data < root->data) {
+        root->left = obrisi(root->left, data);
     }
+    else if (data > root->data) {
+        root->right = obrisi(root->right, data);
+    }
+    else {
+        if (root->left == NULL) {
+            Node* temp = root->right;
+            free(root);
+            return temp;
+        }
+        else if (root->right == NULL) {
+            Node* temp = root->left;
+            free(root);
+            return temp;
+        }
 
-    fclose(file);
-    return racuni;
+        Node* temp = najmanjiCvor(root->right);
+        root->data = temp->data;
+        root->right = obrisi(root->right, temp->data);
+    }
+    return root;
 }
 
-// Funkcija za izračun ukupne potrošnje i količine za artikl
-void izracunajPotrosnju(Racun* racuni, const char* nazivArtikla, const char* datumOd, const char* datumDo) {
-    float ukupnaCijena = 0;
-    int ukupnaKolicina = 0;
-
-    while (racuni) {
-        if (strcmp(racuni->datum, datumOd) >= 0 && strcmp(racuni->datum, datumDo) <= 0) {
-            Artikl* artikli = racuni->artikli;
-            while (artikli) {
-                if (strcmp(artikli->naziv, nazivArtikla) == 0) {
-                    ukupnaCijena += artikli->kolicina * artikli->cijena;
-                    ukupnaKolicina += artikli->kolicina;
-                }
-                artikli = artikli->sljedeci;
-            }
-        }
-        racuni = racuni->sljedeci;
-    }
-
-    printf("Artikl: %s\nUkupno potroseno: %.2f\nUkupno kupljeno: %d\n",
-        nazivArtikla, ukupnaCijena, ukupnaKolicina);
-}
-
-// Glavna funkcija
+// Glavni program
 int main() {
-    Racun* racuni = ucitajRacune("racuni.txt");
-    if (!racuni) {
-        return 1;
-    }
+    Node* root = NULL;
+    int izbor, vrijednost;
 
-    char artikl[50], datumOd[11], datumDo[11];
-    printf("Unesite naziv artikla: ");
-    scanf("%s", artikl);
-    printf("Unesite pocetni datum (YYYY-MM-DD): ");
-    scanf("%s", datumOd);
-    printf("Unesite krajnji datum (YYYY-MM-DD): ");
-    scanf("%s", datumDo);
+    do {
+        printf("\nIzbornik:\n");
+        printf("1. Dodaj element\n");
+        printf("2. Ispis (inorder)\n");
+        printf("3. Ispis (preorder)\n");
+        printf("4. Ispis (postorder)\n");
+        printf("5. Ispis (level-order)\n");
+        printf("6. Pronadi element\n");
+        printf("7. Obrisi element\n");
+        printf("8. Izlaz\n");
+        printf("Odabir: ");
+        scanf("%d", &izbor);
 
-    izracunajPotrosnju(racuni, artikl, datumOd, datumDo);
+        switch (izbor) {
+        case 1:
+            printf("Unesite vrijednost za dodavanje: ");
+            scanf("%d", &vrijednost);
+            root = dodaj(root, vrijednost);
+            break;
+        case 2:
+            printf("Inorder ispis: ");
+            inorder(root);
+            printf("\n");
+            break;
+        case 3:
+            printf("Preorder ispis: ");
+            preorder(root);
+            printf("\n");
+            break;
+        case 4:
+            printf("Postorder ispis: ");
+            postorder(root);
+            printf("\n");
+            break;
+        case 5:
+            printf("Level-order ispis: ");
+            levelOrder(root);
+            printf("\n");
+            break;
+        case 6:
+            printf("Unesite vrijednost za pronalazak: ");
+            scanf("%d", &vrijednost);
+            if (pronadi(root, vrijednost)) {
+                printf("Element %d pronađen.\n", vrijednost);
+            }
+            else {
+                printf("Element %d nije pronađen.\n", vrijednost);
+            }
+            break;
+        case 7:
+            printf("Unesite vrijednost za brisanje: ");
+            scanf("%d", &vrijednost);
+            root = obrisi(root, vrijednost);
+            printf("Element %d obrisan (ako je postojao).\n", vrijednost);
+            break;
+        case 8:
+            printf("Izlaz iz programa.\n");
+            break;
+        default:
+            printf("Nepoznata opcija.\n");
+        }
+    } while (izbor != 8);
 
     return 0;
 }

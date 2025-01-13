@@ -1,0 +1,9 @@
+
+UVOD:
+Web razvoj obuhvaća proces stvaranja i održavanja web stranica, čiji je glavni cilj osigurati funkcionalnost, atraktivan dizajn i dobro korisničko iskustvo. Razvoj se dijeli na dva ključna segmenta – frontend i backend development, o čemu ćemo detaljnije govoriti na sljedećim slajdovima.
+BACKEND:
+Backend development je zadužen za sve što se odvija 'iza kulisa' web stranice. To uključuje logiku aplikacije, upravljanje bazama podataka i komunikaciju s poslužiteljima. Koriste se razni programski jezici, poput Pythona ili PHP-a, kao i baze podataka poput MySQL-a. Uspješna suradnja frontend-a i backend-a ključna je za dobro funkcioniranje web stranica.
+FRONTEND:
+Frontend development bavi se dijelom web stranice koji korisnik vidi i koristi. To uključuje izradu strukture sadržaja pomoću HTML-a, stilizaciju i dizajn putem CSS-a, te dodavanje interaktivnosti uz pomoć JavaScript-a. Dobar frontend razvoj stavlja fokus na jednostavnost korištenja i estetsku privlačnost stranice, osiguravajući ugodno korisničko iskustvo.
+RESPONZIVNI WEB DIZAJN:
+Responzivni web dizajn omogućuje web stranicama da se prilagode različitim veličinama ekrana i uređajima, od mobitela do desktop računala. Ključni elementi ovog pristupa su fluidne mreže, koje koriste proporcije umjesto fiksnih dimenzija; medijski upiti, koji prilagođavaju stilove na temelju veličine uređaja; te fleksibilne slike, koje se skaliraju prema ekranu bez gubitka kvalitete. Ovaj pristup osigurava konzistentno iskustvo za sve korisnike.
