@@ -1,207 +1,203 @@
 ﻿#include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
+#include <string.h>
 
-// Struktura za čvor stabla
-typedef struct Node {
-    int data;
-    struct Node* left;
-    struct Node* right;
-} Node;
+#define MAX_LINE 256
+#define MAX_NAME 128
 
-// Funkcija za stvaranje novog čvora
-Node* noviCvor(int data) {
-    Node* cvor = (Node*)malloc(sizeof(Node));
-    cvor->data = data;
-    cvor->left = NULL;
-    cvor->right = NULL;
-    return cvor;
-}
+// Struktura za čvor stabla gradova
+typedef struct Grad {
+    char naziv[MAX_NAME];
+    int brojStanovnika;
+    struct Grad* lijevo;
+    struct Grad* desno;
+} Grad;
 
-// Dodavanje novog elementa u stablo
-Node* dodaj(Node* root, int data) {
-    if (root == NULL) {
-        return noviCvor(data);
-    }
-    if (data < root->data) {
-        root->left = dodaj(root->left, data);
-    }
-    else if (data > root->data) {
-        root->right = dodaj(root->right, data);
-    }
-    return root;
-}
+// Struktura za čvor vezane liste država
+typedef struct Drzava {
+    char naziv[MAX_NAME];
+    Grad* gradovi;
+    struct Drzava* sljedeca;
+} Drzava;
 
-// Ispis inorder (lijevo, korijen, desno)
-void inorder(Node* root) {
-    if (root != NULL) {
-        inorder(root->left);
-        printf("%d ", root->data);
-        inorder(root->right);
-    }
-}
-
-// Ispis preorder (korijen, lijevo, desno)
-void preorder(Node* root) {
-    if (root != NULL) {
-        printf("%d ", root->data);
-        preorder(root->left);
-        preorder(root->right);
-    }
-}
-
-// Ispis postorder (lijevo, desno, korijen)
-void postorder(Node* root) {
-    if (root != NULL) {
-        postorder(root->left);
-        postorder(root->right);
-        printf("%d ", root->data);
-    }
-}
-
-// Ispis level-order (po razinama)
-void levelOrder(Node* root) {
-    if (root == NULL) return;
-
-    Node* queue[100];
-    int front = 0, rear = 0;
-
-    queue[rear++] = root;
-
-    while (front < rear) {
-        Node* current = queue[front++];
-        printf("%d ", current->data);
-
-        if (current->left != NULL) {
-            queue[rear++] = current->left;
-        }
-        if (current->right != NULL) {
-            queue[rear++] = current->right;
-        }
-    }
-}
-
-// Pronalaženje elementa u stablu
-bool pronadi(Node* root, int data) {
-    if (root == NULL) {
-        return false;
-    }
-    if (data == root->data) {
-        return true;
-    }
-    if (data < root->data) {
-        return pronadi(root->left, data);
-    }
-    else {
-        return pronadi(root->right, data);
-    }
-}
-
-// Najmanji element u stablu (za pomoć pri brisanju)
-Node* najmanjiCvor(Node* root) {
-    while (root->left != NULL) {
-        root = root->left;
-    }
-    return root;
-}
-
-// Brisanje elementa iz stabla
-Node* obrisi(Node* root, int data) {
-    if (root == NULL) {
+// Funkcija za kreiranje novog čvora za grad
+Grad* noviGrad(char* naziv, int brojStanovnika) {
+    Grad* novi = (Grad*)malloc(sizeof(Grad));
+    if (!novi) {
+        perror("Greska pri alokaciji memorije za grad.");
         return NULL;
     }
-    if (data < root->data) {
-        root->left = obrisi(root->left, data);
-    }
-    else if (data > root->data) {
-        root->right = obrisi(root->right, data);
-    }
-    else {
-        if (root->left == NULL) {
-            Node* temp = root->right;
-            free(root);
-            return temp;
-        }
-        else if (root->right == NULL) {
-            Node* temp = root->left;
-            free(root);
-            return temp;
-        }
-
-        Node* temp = najmanjiCvor(root->right);
-        root->data = temp->data;
-        root->right = obrisi(root->right, temp->data);
-    }
-    return root;
+    strcpy(novi->naziv, naziv);
+    novi->brojStanovnika = brojStanovnika;
+    novi->lijevo = NULL;
+    novi->desno = NULL;
+    return novi;
 }
 
-// Glavni program
-int main() {
-    Node* root = NULL;
-    int izbor, vrijednost;
+// Funkcija za dodavanje grada u stablo gradova
+Grad* dodajGrad(Grad* korijen, char* naziv, int brojStanovnika) {
+    if (korijen == NULL)
+        return noviGrad(naziv, brojStanovnika);
 
-    do {
-        printf("\nIzbornik:\n");
-        printf("1. Dodaj element\n");
-        printf("2. Ispis (inorder)\n");
-        printf("3. Ispis (preorder)\n");
-        printf("4. Ispis (postorder)\n");
-        printf("5. Ispis (level-order)\n");
-        printf("6. Pronadi element\n");
-        printf("7. Obrisi element\n");
-        printf("8. Izlaz\n");
-        printf("Odabir: ");
-        scanf("%d", &izbor);
+    if (brojStanovnika < korijen->brojStanovnika || (brojStanovnika == korijen->brojStanovnika && strcmp(naziv, korijen->naziv) < 0)) {
+        korijen->lijevo = dodajGrad(korijen->lijevo, naziv, brojStanovnika);
+    }
+    else {
+        korijen->desno = dodajGrad(korijen->desno, naziv, brojStanovnika);
+    }
 
-        switch (izbor) {
-        case 1:
-            printf("Unesite vrijednost za dodavanje: ");
-            scanf("%d", &vrijednost);
-            root = dodaj(root, vrijednost);
-            break;
-        case 2:
-            printf("Inorder ispis: ");
-            inorder(root);
-            printf("\n");
-            break;
-        case 3:
-            printf("Preorder ispis: ");
-            preorder(root);
-            printf("\n");
-            break;
-        case 4:
-            printf("Postorder ispis: ");
-            postorder(root);
-            printf("\n");
-            break;
-        case 5:
-            printf("Level-order ispis: ");
-            levelOrder(root);
-            printf("\n");
-            break;
-        case 6:
-            printf("Unesite vrijednost za pronalazak: ");
-            scanf("%d", &vrijednost);
-            if (pronadi(root, vrijednost)) {
-                printf("Element %d pronađen.\n", vrijednost);
-            }
-            else {
-                printf("Element %d nije pronađen.\n", vrijednost);
-            }
-            break;
-        case 7:
-            printf("Unesite vrijednost za brisanje: ");
-            scanf("%d", &vrijednost);
-            root = obrisi(root, vrijednost);
-            printf("Element %d obrisan (ako je postojao).\n", vrijednost);
-            break;
-        case 8:
-            printf("Izlaz iz programa.\n");
-            break;
-        default:
-            printf("Nepoznata opcija.\n");
+    return korijen;
+}
+
+// Funkcija za kreiranje novog čvora za državu
+Drzava* novaDrzava(char* naziv) {
+    Drzava* nova = (Drzava*)malloc(sizeof(Drzava));
+    if (!nova) {
+        perror("Greska pri alokaciji memorije za drzavu.");
+        return NULL;
+    }
+    strcpy(nova->naziv, naziv);
+    nova->gradovi = NULL;
+    nova->sljedeca = NULL;
+    return nova;
+}
+
+// Funkcija za dodavanje države u sortiranu vezanu listu
+Drzava* dodajDrzavu(Drzava* glava, char* naziv) {
+    Drzava* nova = novaDrzava(naziv);
+    if (!nova)
+        return glava;
+
+    if (!glava || strcmp(naziv, glava->naziv) < 0) {
+        nova->sljedeca = glava;
+        return nova;
+    }
+
+    Drzava* trenutna = glava;
+    while (trenutna->sljedeca && strcmp(naziv, trenutna->sljedeca->naziv) > 0) {
+        trenutna = trenutna->sljedeca;
+    }
+
+    nova->sljedeca = trenutna->sljedeca;
+    trenutna->sljedeca = nova;
+    return glava;
+}
+
+// Funkcija za učitavanje gradova iz datoteke i dodavanje u stablo
+Grad* ucitajGradove(char* imeDatoteke) {
+    FILE* fp = fopen(imeDatoteke, "r");
+    if (!fp) {
+        perror("Greska pri otvaranju datoteke s gradovima.");
+        return NULL;
+    }
+
+    Grad* korijen = NULL;
+    char linija[MAX_LINE];
+    char nazivGrada[MAX_NAME];
+    int brojStanovnika;
+
+    while (fgets(linija, MAX_LINE, fp)) {
+        if (sscanf(linija, "%[^,], %d", nazivGrada, &brojStanovnika) == 2) {
+            korijen = dodajGrad(korijen, nazivGrada, brojStanovnika);
         }
-    } while (izbor != 8);
+    }
+
+    fclose(fp);
+    return korijen;
+}
+
+// Funkcija za učitavanje država iz glavne datoteke
+Drzava* ucitajDrzave(char* imeDatoteke) {
+    FILE* fp = fopen(imeDatoteke, "r");
+    if (!fp) {
+        perror("Greska pri otvaranju glavne datoteke.");
+        return NULL;
+    }
+
+    Drzava* glava = NULL;
+    char linija[MAX_LINE];
+    char nazivDrzave[MAX_NAME];
+    char datotekaGradova[MAX_NAME];
+
+    while (fgets(linija, MAX_LINE, fp)) {
+        if (sscanf(linija, "%[^,], %s", nazivDrzave, datotekaGradova) == 2) {
+            Drzava* drzava = novaDrzava(nazivDrzave);
+            drzava->gradovi = ucitajGradove(datotekaGradova);
+            glava = dodajDrzavu(glava, nazivDrzave);
+        }
+    }
+
+    fclose(fp);
+    return glava;
+}
+
+// Funkcija za ispis stabla gradova
+void ispisiGradove(Grad* korijen) {
+    if (!korijen)
+        return;
+
+    ispisiGradove(korijen->lijevo);
+    printf("\t%s (%d)\n", korijen->naziv, korijen->brojStanovnika);
+    ispisiGradove(korijen->desno);
+}
+
+// Funkcija za ispis vezane liste država
+void ispisiDrzave(Drzava* glava) {
+    while (glava) {
+        printf("%s:\n", glava->naziv);
+        ispisiGradove(glava->gradovi);
+        glava = glava->sljedeca;
+    }
+}
+
+// Funkcija za pretragu gradova s većim brojem stanovnika
+void pretraziGradove(Grad* korijen, int prag) {
+    if (!korijen)
+        return;
+
+    pretraziGradove(korijen->lijevo, prag);
+    if (korijen->brojStanovnika > prag)
+        printf("\t%s (%d)\n", korijen->naziv, korijen->brojStanovnika);
+    pretraziGradove(korijen->desno, prag);
+}
+
+// Funkcija za pronalaženje države
+Drzava* pronadjiDrzavu(Drzava* glava, char* naziv) {
+    while (glava && strcmp(glava->naziv, naziv) != 0) {
+        glava = glava->sljedeca;
+    }
+    return glava;
+}
+
+int main() {
+    char imeDatoteke[MAX_NAME] = "drzave.txt";
+    Drzava* drzave = ucitajDrzave(imeDatoteke);
+
+    if (!drzave) {
+        printf("Greska pri ucitavanju drzava.\n");
+        return 1;
+    }
+
+    printf("Ucitane drzave i gradovi:\n");
+    ispisiDrzave(drzave);
+
+    char trazenaDrzava[MAX_NAME];
+    int prag;
+
+    printf("\nUnesite naziv drzave za pretragu: ");
+    scanf("%s", trazenaDrzava);
+
+    printf("Unesite minimalan broj stanovnika: ");
+    scanf("%d", &prag);
+
+    Drzava* drzava = pronadjiDrzavu(drzave, trazenaDrzava);
+    if (drzava) {
+        printf("Gradovi u drzavi %s s vise od %d stanovnika:\n", trazenaDrzava, prag);
+        pretraziGradove(drzava->gradovi, prag);
+    }
+    else {
+        printf("Drzava %s nije pronadjena.\n", trazenaDrzava);
+    }
 
     return 0;
 }
